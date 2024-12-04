@@ -1,160 +1,118 @@
 <template>
   <div class="header-container">
-    <!-- Main Card Header -->
     <div class="card header-card">
       <div class="card-body d-flex align-items-center justify-content-between">
-        <!-- Dashboard Title -->
         <h3 class="card-title mb-0 d-none d-sm-block"><b>{{ cardTitle }}</b></h3>
 
-        <!-- DateTime Display -->
-        <div class="datetime-display">
-          {{ currentDateTime }}
-        </div>
-
-        <!-- Profile Section -->
         <div class="profile-section d-flex align-items-center">
-          <div class="dropdown me-3 position-relative" ref="dropdown">
+          <!-- Profile Picture -->
+          <div class="profile-picture-container d-flex justify-content-center align-items-center position-relative">
+            <img 
+              v-if="userInfo.profilePicture"
+              :src="userInfo.profilePicture"
+              alt="Profile Picture"
+              class="profile-picture"
+              @click="uploadProfilePicture"
+            />
+            <input 
+              type="file" 
+              ref="profilePictureInput" 
+              accept="image/*" 
+              class="d-none" 
+              @change="handleProfilePictureChange" 
+            />
+          </div>
+
+          <!-- User Info Section -->
+          <div class="user-info d-flex align-items-center">
+            <i class="material-icons">account_circle</i>
+            <div class="account-info d-flex flex-column justify-content-center bg-light px-3 shadow-account"
+               style="height: 50px; width: 270px; border-radius: 20px;">
+              <span class="fw-bold">{{ userInfo.lastName }}, {{ userInfo.firstName }}</span>
+              <span>{{ userInfo.email }}</span>
+            </div>
+          </div>
+
+          <!-- Edit Profile Dropdown -->
+          <div class="dropdown ms-3">
             <button
               class="btn btn-light p-0 position-relative"
               type="button"
-              @click="toggleDropdown"
+              @click="toggleProfileDropdown"
               aria-expanded="false"
               style="border: none; background: transparent;"
             >
-              <span class="material-icons">mail</span>
+              <span class="material-icons">edit</span>
             </button>
-            <ul class="dropdown-menu" ref="dropdownMenu">
-              <li><a class="dropdown-item" href="#">No new notifications</a></li>
-              <li><a class="dropdown-item" href="#">Another notification</a></li>
+            <ul class="dropdown-menu dropdown-menu-right" ref="profileDropdownMenu">
+              <li><a class="dropdown-item" href="#" @click="openEditProfileDialog">Edit Profile</a></li>
             </ul>
-          </div>
-
-          <div class="user-info d-flex align-items-center">
-            <i class="material-icons">account_circle</i>
-            <div class="ms-2">
-              <strong>{{ userProfile.lastName }}, {{ userProfile.firstName }} {{ userProfile.middleName }}</strong><br />
-              <small>202xxxxxx@yourdomain.edu.ph</small>
-            </div>
-
-            <div class="dropdown ms-3">
-              <button
-                class="btn btn-light p-0"
-                type="button"
-                @click="toggleUserDropdown"
-                aria-expanded="false"
-                style="border: none; background: transparent;"
-              >
-                <span class="material-icons">arrow_drop_down</span>
-              </button>
-              <ul class="dropdown-menu dropdown-menu-right" ref="userDropdownMenu">
-                <li><a class="dropdown-item" href="#" @click.prevent="openEditProfileDialog">Edit Profile</a></li>
-              </ul>
-            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Edit Profile Dialog -->
-    <div class="dialog-overlay" v-if="isEditProfileDialogVisible">
-      <div class="dialog-content">
-        <!-- Edit Profile Header -->
-        <h2>Edit Profile</h2>
-
-        <!-- Profile Picture Section Below the Header -->
-        <div class="profile-picture-container text-center">
-          <div class="profile-picture">
-            <input
-              type="file"
-              accept="image/*"
-              @change="handleFileUpload"
-              class="profile-picture-input"
-            />
-            <img
-              :src="profilePictureUrl"
-              alt="Profile Picture"
-              class="profile-picture-img"
-            />
-          </div>
-          <button class="btn btn-link mt-2" @click="handleFileUploadClick"></button>
+    <!-- Edit Profile Modal -->
+    <div v-if="showEditProfile" class="modal-overlay" @click.self="closeEditProfileDialog">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h5 class="modal-title">Edit Profile</h5>
+          <button type="button" class="btn-close" @click="closeEditProfileDialog"></button>
         </div>
-
-        <form @submit.prevent="submitForm">
-          <div class="form-group">
-            <label for="firstName">First Name:</label>
-            <div class="d-flex align-items-center">
-              <span>{{ form.firstName }}</span>
+        <div class="modal-body">
+          <!-- Profile Picture Upload Section -->
+          <div class="profile-upload-container text-center mb-4">
+            <input 
+              type="file" 
+              ref="modalProfilePictureInput" 
+              accept="image/*" 
+              class="d-none" 
+              @change="handleModalProfilePictureChange" 
+            />
+            <img 
+              :src="modalProfilePicture || (userInfo.profilePicture || 'default-profile.png')" 
+              alt="Profile Picture" 
+              class="modal-profile-picture" 
+              @click="triggerProfilePictureUpload"
+            />
+            <div class="upload-overlay" @click="triggerProfilePictureUpload">
+              <span class="material-icons">camera_alt</span>
             </div>
           </div>
 
           <div class="form-group">
-            <label for="lastName">Last Name:</label>
-            <div class="d-flex align-items-center">
-              <span>{{ form.lastName }}</span>
-            </div>
+            <label for="firstName">First Name</label>
+            <input type="text" id="firstName" v-model="userInfo.firstName" disabled class="form-control" />
           </div>
-
           <div class="form-group">
-            <label for="middleName">Middle Name:</label>
-            <div class="d-flex align-items-center">
-              <span>{{ form.middleName }}</span>
-            </div>
+            <label for="lastName">Last Name</label>
+            <input type="text" id="lastName" v-model="userInfo.lastName" disabled class="form-control" />
           </div>
-
           <div class="form-group">
-            <label for="gender">Gender:</label>
-            <div class="d-flex align-items-center">
-              <select
-                v-if="editingField === 'gender'"
-                id="gender"
-                v-model="form.gender"
-                class="form-control"
-              >
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </select>
-              <span v-else>{{ form.gender }}</span>
-              <button
-                type="button"
-                class="btn btn-link ms-2"
-                @click="editingField = 'gender'"
-              >
-                Edit
-              </button>
-            </div>
+            <label for="middleName">Middle Name</label>
+            <input type="text" id="middleName" v-model="userInfo.middleName" disabled class="form-control" />
           </div>
-
           <div class="form-group">
-            <label for="department">College Department:</label>
-            <div class="d-flex align-items-center">
-              <select
-                v-if="editingField === 'department'"
-                id="department"
-                v-model="form.department"
-                class="form-control"
-              >
-                <option value="Computer Studies">Computer Studies</option>
-                <option value="College Of Business and Accountancy">College Of Business and Accountancy</option>
-                <option value="College of Education, Arts, and Science">College of Education, Arts, and Science</option>
-                <option value="College of Hospitality and Tourism Management">College of Hospitality and Tourism Management</option>
-              </select>
-              <span v-else>{{ form.department }}</span>
-              <button
-                type="button"
-                class="btn btn-link ms-2"
-                @click="editingField = 'department'"
-              >
-                Edit
-              </button>
-            </div>
+            <label for="gender">Gender</label>
+            <select id="gender" v-model="userInfo.gender" class="form-control">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
           </div>
-
-          <div class="form-actions mt-3">
-            <button type="submit" class="btn btn-primary">Save</button>
-            <button type="button" class="btn btn-secondary" @click="closeDialog">Cancel</button>
+          <div class="form-group">
+            <label for="collegeDepartment">College Department</label>
+            <select id="collegeDepartment" v-model="userInfo.collegeDepartment" class="form-control">
+              <option value="College of Computer Studies">College of Computer Studies</option>
+              <option value="CHTM">CHTM</option>
+              <option value="BRRRT">BRRRT</option>
+              <option value="EXAMPLE">EXAMPLE</option>
+            </select>
           </div>
-        </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" @click="closeEditProfileDialog">Close</button>
+          <button type="button" class="btn btn-primary" @click="saveProfileChanges">Save changes</button>
+        </div>
       </div>
     </div>
   </div>
@@ -162,28 +120,25 @@
 
 <script>
 export default {
-  name: 'AdminHeader',
   data() {
     return {
-      currentDateTime: '',
-      timer: null,
-      isEditProfileDialogVisible: false,
-      editingField: null,
-      userProfile: {
-        firstName: 'Fname',
-        lastName: 'L.Name',
-        middleName: 'M.I.',
-        department: 'College Department',
-        gender: 'Male OR Female',
+      userInfo: {
+        firstName: '',
+        lastName: '',
+        middleName: '',
+        gender: 'Male',
+        collegeDepartment: 'College of Computer Studies',
+        email: '',
+        profilePicture: null
       },
-      form: {},
-      profilePictureUrl: '', // Add a variable to store the uploaded profile picture URL
+      showEditProfile: false,
+      modalProfilePicture: null
     };
   },
   computed: {
     cardTitle() {
       switch (this.$route.path) {
-        case '/clearance' :
+        case '/clearance':
           return 'Clearance';
         case '/ClearanceRecord':
           return 'Clearance';
@@ -201,6 +156,19 @@ export default {
     }
   },
   methods: {
+    triggerProfilePictureUpload() {
+      this.$refs.modalProfilePictureInput.click();
+    },
+    handleModalProfilePictureChange(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          this.modalProfilePicture = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    },
     toggleDropdown() {
       const dropdownElement = this.$refs.dropdown;
       const dropdownMenu = this.$refs.dropdownMenu;
@@ -214,85 +182,65 @@ export default {
         dropdownElement.setAttribute('aria-expanded', 'true');
       }
     },
-    toggleUserDropdown() {
-      const userDropdownMenu = this.$refs.userDropdownMenu;
-      if (userDropdownMenu.classList.contains('show')) {
-        userDropdownMenu.classList.remove('show');
-      } else {
-        userDropdownMenu.classList.add('show');
-      }
+    toggleProfileDropdown() {
+      const profileDropdownMenu = this.$refs.profileDropdownMenu;
+      profileDropdownMenu.classList.toggle('show');
     },
     openEditProfileDialog() {
-      this.isEditProfileDialogVisible = true;
-      this.form = { ...this.userProfile };
+      // Reset modal profile picture when opening dialog
+      this.modalProfilePicture = this.userInfo.profilePicture;
+      this.showEditProfile = true;
     },
-    closeDialog() {
-      this.isEditProfileDialogVisible = false;
-      this.editingField = null;
+    closeEditProfileDialog() {
+      this.showEditProfile = false;
+      this.modalProfilePicture = null;
     },
-    submitForm() {
-      this.userProfile = { ...this.form };
-      this.closeDialog();
-    },
-    updateDateTime() {
-      const now = new Date();
-      if (window.innerWidth <= 768) {
-        const date = now.toLocaleDateString('en-US', {
-          month: '2-digit',
-          day: '2-digit',
-          year: 'numeric'
-        });
-        const time = now.toLocaleTimeString('en-US', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
-        });
-        this.currentDateTime = `${date} - ${time}`;
-      } else {
-        const options = { 
-          weekday: 'long', 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        };
-        this.currentDateTime = now.toLocaleDateString('en-US', options);
+    saveProfileChanges() {
+      // Update profile picture if changed
+      if (this.modalProfilePicture) {
+        this.userInfo.profilePicture = this.modalProfilePicture;
       }
+      
+      // Handle saving logic here
+      console.log('Profile saved', this.userInfo);
+      this.closeEditProfileDialog();
     },
-    handleFileUpload(event) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          this.profilePictureUrl = e.target.result;
-        };
-        reader.readAsDataURL(file);
-      }
-    },
-    handleFileUploadClick() {
-      this.$refs.profilePictureInput.click();
+    loadUserInfo() {
+      const firstName = localStorage.getItem('firstname') || 'Guest';
+      const lastName = localStorage.getItem('lastname') || '';
+      const middleName = localStorage.getItem('middleName') || '';
+      const email = localStorage.getItem('email') || '';
+      const profilePicture = localStorage.getItem('profilePicture') || null;
+
+      this.userInfo = { 
+        firstName, 
+        lastName, 
+        middleName, 
+        email, 
+        profilePicture,
+        gender: 'Male',
+        collegeDepartment: 'College of Computer Studies'
+      };  
     }
   },
   mounted() {
-    this.updateDateTime();
-    this.timer = setInterval(() => {
-      this.updateDateTime();
-    }, 60000);
+    this.loadUserInfo();
+    window.addEventListener('storage', this.loadUserInfo);
   },
-  beforeDestroy() {
-    clearInterval(this.timer);
+  beforeUnmount() {
+    window.removeEventListener('storage', this.loadUserInfo); 
   }
 };
 </script>
+
 
 <style scoped>
 .header-container {
   position: fixed;
   top: 0;
   right: 0;
-  left: 250px; /* Adjust based on sidebar width */
-  width: calc(100% - 250px); /* Adjust based on sidebar width */
+  left: 250px;
+  width: calc(100% - 250px);
   padding: 10px 20px;
   z-index: 1000;
   transition: all 0.3s ease;
@@ -344,101 +292,8 @@ export default {
   margin-right: 8px;
 }
 
-.datetime-display {
-  opacity: 0.6;
-  font-size: 0.8rem;
-  color: #333;
-  position: absolute;
-  bottom: 8px;
-  left: 20px;
-}
-
-.dropdown-menu-left {
-  left: -10px; /* Move the dropdown to the left side */
-}
-
-@media (max-width: 992px) {
-  .header-container {
-    left: 80px; /* Adjust based on collapsed sidebar width */
-    width: calc(100% - 80px); /* Adjust based on collapsed sidebar width */
-  }
-}
-
-@media (max-width: 768px) {
-  .card-title {
-    font-size: 1.25rem;
-  }
-
-  .profile-section {
-    font-size: 12px;
-  }
-
-  .user-info {
-    font-size: 12px;
-  }
-
-  .material-icons {
-    font-size: 20px;
-  }
-
-  .profile-section i.material-icons {
-    font-size: 20px;
-  }
-
-  .user-info i.material-icons {
-    font-size: 28px;
-  }
-}
-
-@media (max-width: 576px) {
-  .header-container {
-    left: 0;
-    width: 100%;
-    padding: 10px;
-    z-index: 999; /* Ensure header is below the hamburger menu */
-  }
-
-  .card-title {
-    display: none;
-  }
-
-  .profile-section {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .user-info {
-    font-size: 12px;
-    margin-top: 8px;
-  }
-
-  .user-info i.material-icons {
-    font-size: 30px;
-  }
-
-  .profile-section {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-    padding-right: 15px;
-  }
-
-  .dropdown .material-icons {
-    transform: translateY(2px); /* Move down slightly without affecting padding */
-    font-size: 30px;
-    margin-left: -100px;
-  }
-
-  .datetime-display {
-    font-size: 0.7rem;
-    bottom: 5px;
-    left: 15px; 
-  }
-}
-
-/* Dialog Styles */
-.dialog-overlay {
+/* Modal Styles */
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -448,58 +303,110 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
+  z-index: 9999;
+  pointer-events: auto; 
 }
 
-.dialog-content {
+.modal-dialog {
   background-color: white;
   padding: 20px;
-  border-radius: 8px;
-  width: 80%;
-  max-width: 600px;
+  border-radius: 10px;
+  width: 400px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 10000; 
+  pointer-events: auto; 
+  position: relative; 
 }
 
-.profile-picture-container {
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-title {
+  font-size: 1.25rem;
+}
+
+.btn-close {
+  border: none;
+  background: transparent;
+  font-size: 1.5rem;
+}
+
+.modal-body .form-group {
+  margin-bottom: 1rem;
+}
+
+.form-control {
+  width: 100%;
+  padding: 8px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 576px) {
+  .header-container {
+    left: 0;
+    width: 100%;
+    padding: 10px;
+    z-index: 1000;
+  }
+
+  .modal-dialog {
+    width: 90%;
+  }
+}
+.profile-upload-container {
+  position: relative;
   margin-bottom: 20px;
 }
 
-.profile-picture {
-  position: relative;
-  display: inline-block;
-  width: 120px;
-  height: 120px;
+.modal-profile-picture {
+  width: 150px;
+  height: 150px;
   border-radius: 50%;
-  overflow: hidden;
-  background-color: #ddd;
-  margin: 0 auto;
-}
-
-.profile-picture-img {
-  width: 100%;
-  height: 100%;
   object-fit: cover;
+  cursor: pointer;
+  border: 3px solid #DBF4F8;
 }
 
-.profile-picture-input {
+.upload-overlay {
   position: absolute;
-  bottom: 5px;
-  right: 5px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.5);
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   opacity: 0;
+  transition: opacity 0.3s ease;
   cursor: pointer;
 }
 
-.form-group {
-  margin-bottom: 15px;
+.upload-overlay:hover {
+  opacity: 1;
 }
 
-.form-actions {
-  margin-top: 20px;
-  display: flex;
-  justify-content: space-between;
+.upload-overlay .material-icons {
+  color: white;
+  font-size: 36px;
 }
 
-.btn-link {
-  padding: 0;
-  font-size: 14px;
+.modal-overlay {
+  cursor: pointer;
 }
 
+.modal-dialog {
+  cursor: default;
+}
 </style>
