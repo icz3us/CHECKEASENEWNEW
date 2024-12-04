@@ -70,33 +70,77 @@
 </template>
 
 <script>
+import axios from 'axios'; 
+
 export default {
   data() {
     return {
       isSidebarHidden: false,
+      isAttendanceDropdownOpen: false,
       currentRoute: '/home',
+      showDialog: false,
     };
   },
+
   mounted() {
     this.handleResize();
+    this.loadUserInfo();
+    console.log(localStorage.getItem('email'));
     window.addEventListener('resize', this.handleResize);
   },
+
   beforeDestroy() {
     window.removeEventListener('resize', this.handleResize);
   },
+
   methods: {
     toggleSidebar() {
-      this.isSidebarHidden = !this.isSidebarHidden;
+      this.isSidebarHidden = !this.isSidebarHidden;  
     },
+
+    confirmLogout() {
+      this.showDialog = true;
+    },
+
+    closeDialog() {
+      this.showDialog = false;
+    },
+
+    logout() {
+      
+      axios.get('/logout.php') 
+        .then(response => {
+          localStorage.removeItem("token");
+          localStorage.removeItem("role");
+          localStorage.removeItem("firstname");
+          localStorage.removeItem("lastname");
+          localStorage.removeItem("email");
+
+          this.$router.push("/Login");
+          this.showDialog = false; 
+        })
+        .catch(error => {
+          console.error('Logout failed:', error);
+        });
+    },
+
+    toggleAttendanceDropdown() {
+      this.isAttendanceDropdownOpen = !this.isAttendanceDropdownOpen;
+    },
+
     handleResize() {
       this.isSidebarHidden = window.innerWidth < 768;
     },
-    logout() {
-      localStorage.removeItem('authToken'); 
-      this.$router.push('/Login');
-    },
+
     isActive(route) {
       return this.$route.path === route;
+    },
+
+    loadUserInfo() {
+      const firstName = localStorage.getItem('firstname') || 'Guest';
+      const lastName = localStorage.getItem('lastname') || '';
+      const email = localStorage.getItem('email') || '';
+      this.userInfo = { firstName, lastName, email };
     },
   },
 };
