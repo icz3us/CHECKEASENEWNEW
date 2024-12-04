@@ -34,20 +34,9 @@
           </div>
 
           <!-- Edit Profile Dropdown -->
-          <div class="dropdown ms-3">
-            <button
-              class="btn btn-light p-0 position-relative"
-              type="button"
-              @click="toggleProfileDropdown"
-              aria-expanded="false"
-              style="border: none; background: transparent;"
-            >
-              <span class="material-icons">edit</span>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-right" ref="profileDropdownMenu">
-              <li><a class="dropdown-item" href="#" @click="openEditProfileDialog">Edit Profile</a></li>
-            </ul>
-          </div>
+          <span class="material-icons ms-3" @click="openEditProfileDialog" style="cursor: pointer;">
+            edit
+          </span>
         </div>
       </div>
     </div>
@@ -93,6 +82,10 @@
             <input type="text" id="middleName" v-model="userInfo.middleName" disabled class="form-control" />
           </div>
           <div class="form-group">
+            <label for="birthday">Birthday</label>
+            <input type="date" id="birthday" v-model="userInfo.birthday" class="form-control" />
+          </div>
+          <div class="form-group">
             <label for="gender">Gender</label>
             <select id="gender" v-model="userInfo.gender" class="form-control">
               <option value="Male">Male</option>
@@ -126,13 +119,14 @@ export default {
         firstName: '',
         lastName: '',
         middleName: '',
+        birthday: null,
         gender: 'Male',
         collegeDepartment: 'College of Computer Studies',
         email: '',
-        profilePicture: null
+        profilePicture: null,
       },
       showEditProfile: false,
-      modalProfilePicture: null
+      modalProfilePicture: null,
     };
   },
   computed: {
@@ -153,7 +147,7 @@ export default {
         default:
           return 'Dashboard';
       }
-    }
+    },
   },
   methods: {
     triggerProfilePictureUpload() {
@@ -169,23 +163,6 @@ export default {
         reader.readAsDataURL(file);
       }
     },
-    toggleDropdown() {
-      const dropdownElement = this.$refs.dropdown;
-      const dropdownMenu = this.$refs.dropdownMenu;
-      if (dropdownMenu.classList.contains('show')) {
-        dropdownMenu.classList.remove('show');
-        dropdownElement.classList.remove('show');
-        dropdownElement.setAttribute('aria-expanded', 'false');
-      } else {
-        dropdownMenu.classList.add('show');
-        dropdownElement.classList.add('show');
-        dropdownElement.setAttribute('aria-expanded', 'true');
-      }
-    },
-    toggleProfileDropdown() {
-      const profileDropdownMenu = this.$refs.profileDropdownMenu;
-      profileDropdownMenu.classList.toggle('show');
-    },
     openEditProfileDialog() {
       // Reset modal profile picture when opening dialog
       this.modalProfilePicture = this.userInfo.profilePicture;
@@ -200,7 +177,7 @@ export default {
       if (this.modalProfilePicture) {
         this.userInfo.profilePicture = this.modalProfilePicture;
       }
-      
+
       // Handle saving logic here
       console.log('Profile saved', this.userInfo);
       this.closeEditProfileDialog();
@@ -219,17 +196,18 @@ export default {
         email, 
         profilePicture,
         gender: 'Male',
-        collegeDepartment: 'College of Computer Studies'
-      };  
-    }
+        collegeDepartment: 'College of Computer Studies',
+        birthday: null,
+      };
+    },
   },
   mounted() {
     this.loadUserInfo();
     window.addEventListener('storage', this.loadUserInfo);
   },
   beforeUnmount() {
-    window.removeEventListener('storage', this.loadUserInfo); 
-  }
+    window.removeEventListener('storage', this.loadUserInfo);
+  },
 };
 </script>
 
@@ -303,7 +281,7 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999;
+  z-index: 9999; 
   pointer-events: auto; 
 }
 
@@ -349,6 +327,7 @@ export default {
   display: flex;
   justify-content: flex-end;
 }
+
 
 @media (max-width: 576px) {
   .header-container {
